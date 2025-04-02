@@ -3,6 +3,7 @@
 
 	HOW TO USE:
 	Make sure the SOUND_FOLDER variable below is set to whatever folder you plan on storing your sound files (ReplicatedStorage or SoundService is a good place for it)
+	If SOUND_FOLDER is NIL, it will instead use collection service.
 
 	Simply use SoundByte.new([Name of sound]) and play the new sound like any other sound object.
 	Example:
@@ -19,17 +20,19 @@
 ]=]
 local Maid = require(script.Maid);
 local SS = game:GetService("SoundService");
+local CS = game:GetService("CollectionService");
 
 --Variables
-local SOUND_FOLDER = nil;--[[CHANGE THIS TO MAIN SOUND DIRECTORY (Folder where all of your sound files are)]]--
+local SOUND_FOLDER = SS;--[[CHANGE THIS TO MAIN SOUND DIRECTORY (Folder where all of your sound files are)]]--
 
-local ACTIVE_SOUNDS = SS:FindFirstChild("ActiveSounds", true);
-if not (ACTIVE_SOUNDS) then 
-    ACTIVE_SOUNDS = Instance.new("Folder"); 
-    ACTIVE_SOUNDS.Parent = SS;
-    ACTIVE_SOUNDS.Name = "ActiveSounds";
+local ACTIVE_SOUNDS_TABLE = {};
+local ACTIVE_SOUNDS_FOLDER = SS:FindFirstChild("ActiveSounds", true);
+if not (ACTIVE_SOUNDS_FOLDER) then 
+    ACTIVE_SOUNDS_FOLDER = Instance.new("Folder"); 
+    ACTIVE_SOUNDS_FOLDER.Parent = SS;
+    ACTIVE_SOUNDS_FOLDER.Name = "ActiveSounds";
 end;
-
+local COLLECTION_TAG = "SoundByte"; --Keep this as is. It is used for tagging sound object. (mostly used for the :StopAll() method)
 local v3_new = Vector3.new;
 
 --Class
@@ -200,6 +203,16 @@ function SoundByte:Stop()
 	if (self.Sound == nil) then return; end;
 	self.Sound:Stop();
 end;
+--Stops all sounds of the same name.
+function SoundByte:StopAll()
+	if (self.Sound == nil) then return; end;
+	for _, sound in pairs(CS:GetTagged(COLLECTION_TAG)) do
+		if (sound:IsA("Sound")) then
+			
+		end;
+	end;
+	self.Sound:Stop();
+end;
 function SoundByte:Pause()
 	if (self.Sound == nil) then return; end;
 	self.Sound:Pause();
@@ -243,12 +256,13 @@ function SoundByte:Create()
 	sound.RollOffMinDistance = self.SoundInfo["RollOffMinDistance"];
 	sound.RollOffMode = self.SoundInfo["RollOffMode"];
 
-	local oldSound = ACTIVE_SOUNDS:FindFirstChild(self.SoundInfo["Name"]);
+	local oldSound = ACTIVE_SOUNDS_FOLDER:FindFirstChild(self.SoundInfo["Name"]);
 	if (oldSound) then
 		oldSound:Destroy();
 	end
 
-	sound.Parent = ACTIVE_SOUNDS;
+	CS:AddTag(sound, COLLECTION_TAG); --Collection service tag, mostly used for the :StopAll() method.
+	sound.Parent = ACTIVE_SOUNDS_FOLDER;
 	return sound;
 end;
 
