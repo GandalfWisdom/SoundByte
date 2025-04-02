@@ -1,0 +1,22 @@
+{
+  "name": "@gandalfwisdom/soundbyte",
+  "version": "1.0.0",
+  "description": "Optimized sound object module for Roblox.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GandalfWisdom/SoundByte.git",
+    "directory": "src/soundbyte/"
+  },
+  "keywords": [
+    "Roblox",
+    "Nevermore",
+    "Lua",
+    "Module"
+  ],
+  "author": "GandalfWisdom",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GandalfWisdom/SoundByte/issues"
+  },
+  "homepage": "https://github.com/GandalfWisdom/SoundByte#readme"
+}
