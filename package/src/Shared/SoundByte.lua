@@ -42,22 +42,28 @@ local SoundByte = {};
 SoundByte.__index = SoundByte;
 SoundByte.ClassName = "SoundByte";
 
+local function find_sound_module(sound_name: string)
+	local sound_module = nil;
+	for _, sound_module_val: ModuleScript in pairs(CS:GetTagged(COLLECTION_TAG)) do
+		if not (sound_module_val:IsA("ModuleScript")) or (sound_module_val.Name ~= sound_name) then continue; end;
+		sound_module = sound_module_val;
+		break;
+	end;
+	if (sound_module == nil) then sound_module = SOUND_FOLDER:FindFirstChild(sound_name, true); end; --Finds sound module through :FindFirstChild() if collection service method fails
+	return sound_module;
+end;
+
 --Constructor
 function SoundByte.new(sound_name: string)
-	if (SOUND_FOLDER == nil) then error("SOUND_FOLDER variable is nil. Remember to set SOUND_FOLDER to the folder your sounds will be stored."); end;
+	local sound_module: ModuleScript = find_sound_module(sound_name);
+	assert(sound_module ~= nil, "Sound module not found! Try setting the correct SOUND_FOLDER variable, or properly tagging your sound instances!");
+	assert(SOUND_FOLDER ~= nil,"SOUND_FOLDER variable is nil. Remember to set SOUND_FOLDER to the folder your sounds will be stored.");
+
     local self = setmetatable({}, SoundByte);
     self._maid = Maid.new();
 
-	--Sound Create
-	self._sound_module = nil;
-	for _, sound_module: ModuleScript in pairs(CS:GetTagged(COLLECTION_TAG)) do
-		if not (sound_module:IsA("ModuleScript")) or (sound_module.Name ~= sound_name) then continue; end;
-		self._sound_module = sound_module;
-		break;
-	end;
-	if (self._sound_module == nil) then self._sound_module = SOUND_FOLDER:FindFirstChild(sound_name, true); end; --Finds sound module through :FindFirstChild() if collection service method fails
 	self.SoundInfo = nil;
-	if (self._sound_module) then self.SoundInfo = require(self._sound_module); end;
+	if (sound_module) then self.SoundInfo = require(sound_module); end;
 	self.Sound = self:Create():: Sound;
 
 	--Variables
