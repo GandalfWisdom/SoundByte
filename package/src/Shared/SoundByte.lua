@@ -18,21 +18,23 @@
 	SoundByte.new("SoundExample"):PlayOnce();
 	```
 ]=]
-local Maid = require(script.Maid);
+local require = require(script.Parent.loader).load(script);
+local Maid = require("Maid");
 local SS = game:GetService("SoundService");
 local CS = game:GetService("CollectionService");
 
 --Variables
 local SOUND_FOLDER = SS;--[[CHANGE THIS TO MAIN SOUND DIRECTORY (Folder where all of your sound files are)]]--
+local COLLECTION_TAG = "SoundByte"; --PROVIDES A FASTER WAY TO INDEX SOUNDS. MAKE SURE YOUR SOUND OBJECT MODULES HAVE THIS TAG.
 
-local ACTIVE_SOUNDS_TABLE = {};
-local ACTIVE_SOUNDS_FOLDER = SS:FindFirstChild("ActiveSounds", true);
+local active_sounds_table= {};
+local ACTIVE_SOUNDS_FOLDER = SS:FindFirstChild("ActiveSounds");
 if not (ACTIVE_SOUNDS_FOLDER) then 
     ACTIVE_SOUNDS_FOLDER = Instance.new("Folder"); 
     ACTIVE_SOUNDS_FOLDER.Parent = SS;
     ACTIVE_SOUNDS_FOLDER.Name = "ActiveSounds";
 end;
-local COLLECTION_TAG = "SoundByte"; --Keep this as is. It is used for tagging sound object. (mostly used for the :StopAll() method)
+
 local v3_new = Vector3.new;
 
 --Class
@@ -47,17 +49,22 @@ function SoundByte.new(sound_name: string)
     self._maid = Maid.new();
 
 	--Sound Create
-	self._sound_module = SOUND_FOLDER:FindFirstChild(sound_name, true);
+	self._sound_module = nil;
+	for _, sound_module: ModuleScript in pairs(CS:GetTagged(COLLECTION_TAG)) do
+		if not (sound_module:IsA("ModuleScript")) or (sound_module.Name ~= sound_name) then continue; end;
+		self._sound_module = sound_module;
+		break;
+	end;
+	if (self._sound_module == nil) then self._sound_module = SOUND_FOLDER:FindFirstChild(sound_name, true); end; --Finds sound module through :FindFirstChild() if collection service method fails
 	self.SoundInfo = nil;
 	if (self._sound_module) then self.SoundInfo = require(self._sound_module); end;
 	self.Sound = self:Create():: Sound;
 
 	--Variables
 	self.TargetPart = nil;
-
+	active_sounds_table[self] = self;
     return self;
 end;
-
 
 --Functions
 --[[
@@ -206,10 +213,9 @@ end;
 --Stops all sounds of the same name.
 function SoundByte:StopAll()
 	if (self.Sound == nil) then return; end;
-	for _, sound in pairs(CS:GetTagged(COLLECTION_TAG)) do
-		if (sound:IsA("Sound")) then
-			
-		end;
+	for _, soundbyte_object in pairs(active_sounds_table) do
+		if (soundbyte_object == nil) then continue; end;
+		soundbyte_object:Stop();
 	end;
 	self.Sound:Stop();
 end;
@@ -280,6 +286,7 @@ end;
 
 --Destroys SoundByte object.
 function SoundByte:Destroy()
+	active_sounds_table[self] = nil;
     self._maid:DoCleaning();
     setmetatable(self, nil);
 end;
