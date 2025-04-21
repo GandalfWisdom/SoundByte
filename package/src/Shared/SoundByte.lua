@@ -1,3 +1,4 @@
+--!strict
 --[=[
 	--SoundByte by GandalfWisdom--
 
@@ -17,11 +18,13 @@
 	```lua
 	SoundByte.new("SoundExample"):PlayOnce();
 	```
+
+	@class SoundByte
 ]=]
 local require = require(script.Parent.loader).load(script);
 local Maid = require("Maid");
-local SS = game:GetService("SoundService");
-local CS = game:GetService("CollectionService");
+local SS: SoundService = game:GetService("SoundService");
+local CS: CollectionService = game:GetService("CollectionService");
 
 --Variables
 local SOUND_FOLDER = SS;--[[CHANGE THIS TO MAIN SOUND DIRECTORY (Folder where all of your sound files are)]]--
@@ -34,15 +37,36 @@ if not (ACTIVE_SOUNDS_FOLDER) then
     ACTIVE_SOUNDS_FOLDER.Parent = SS;
     ACTIVE_SOUNDS_FOLDER.Name = "ActiveSounds";
 end;
-
 local v3_new = Vector3.new;
-
 --Class
 local SoundByte = {};
 SoundByte.__index = SoundByte;
 SoundByte.ClassName = "SoundByte";
 
-local function find_sound_module(sound_name: string)
+
+export type SoundInfo = {
+	Name: string;
+	SoundId: string;
+	Looped: boolean;
+	PlaybackSpeed: number;
+	Volume: number;
+	RollOffMaxDistance: number;
+	RollOffMinDistance: number;
+	RollOffMode: Enum.RollOffMode;
+	ClassName: string;
+};
+
+export type SoundByte = typeof(setmetatable(
+	{} :: {
+		_maid: Maid.Maid;
+		_sound_info: SoundInfo;
+		TargetPart: Instance?;
+		Sound: Sound;
+	},
+	{} :: typeof( {__index = SoundByte} )
+));
+
+local function find_sound_module(sound_name: string): ModuleScript?
 	local sound_module = nil;
 	for _, sound_module_val: ModuleScript in pairs(CS:GetTagged(COLLECTION_TAG)) do
 		if not (sound_module_val:IsA("ModuleScript")) or (sound_module_val.Name ~= sound_name) then continue; end;
@@ -54,20 +78,18 @@ local function find_sound_module(sound_name: string)
 end;
 
 --Constructor
-function SoundByte.new(sound_name: string)
+function SoundByte.new(sound_name: string): SoundByte
+	assert(sound_name ~= nil, "No sound_name provided!");
 	local sound_module: ModuleScript = find_sound_module(sound_name);
 	assert(sound_module ~= nil, "Sound module not found! Try setting the correct SOUND_FOLDER variable, or properly tagging your sound instances!");
 	assert(SOUND_FOLDER ~= nil,"SOUND_FOLDER variable is nil. Remember to set SOUND_FOLDER to the folder your sounds will be stored.");
 
-    local self = setmetatable({}, SoundByte);
+    local self: SoundByte = setmetatable({}, SoundByte);
     self._maid = Maid.new();
-
-	self.SoundInfo = nil;
-	if (sound_module) then self.SoundInfo = require(sound_module); end;
-	self.Sound = self:Create():: Sound;
-
-	--Variables
+	self._sound_info = require(sound_module);
+	self.Sound = self:Create();
 	self.TargetPart = nil;
+
 	active_sounds_table[self] = self;
     return self;
 end;
@@ -86,25 +108,22 @@ end;
 ]]
 
 --Plays sound from ActiveSounds folder in SoundService
-function SoundByte:Play(playback_speed: number, volume: number, time_position: number, pitch: number)
+function SoundByte.Play(self: SoundByte, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
-
 	self.Sound:Play();
 end;
 --Same as above but destroys itself when played, useful for playing the sound once.
-function SoundByte:PlayOnce(playback_speed: number, volume: number, time_position: number, pitch: number)
+function SoundByte.PlayOnce(self: SoundByte, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
-
 	self.Sound.PlayOnRemove = true;
 	self:Destroy();
 end;
 --Plays the sound as a loop
-function SoundByte:Loop(playback_speed: number, volume: number, time_position: number, pitch: number)
+function SoundByte.Loop(self: SoundByte, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
-
 	self.Sound.Looped = true;
 	self.Sound:Play();
 end;
@@ -121,16 +140,15 @@ end;
 	pitch -> The pitch the sound will play at.
 ]]
 --Plays the sound at specified Vector3 (The first argument passed through the function)
-function SoundByte:PlayAtVector3(position: Vector3?, playback_speed: number, volume: number, time_position: number, pitch: number)
+function SoundByte.PlayAtVector3(self: SoundByte, position: Vector3, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
-
 	self:CreatePart(position);
 	self.Sound.Parent = self.TargetPart;
 	self.Sound:Play();
 end;
 --Same as above but destroys itself when played, useful for playing the sound once.
-function SoundByte:PlayOnceAtVector3(position: Vector3?, playback_speed: number?, volume: number?, time_position: number?, pitch: number?)
+function SoundByte.PlayOnceAtVector3(self: SoundByte, position: Vector3, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
 
@@ -140,10 +158,9 @@ function SoundByte:PlayOnceAtVector3(position: Vector3?, playback_speed: number?
 	self:Destroy();
 end;
 --Plays the sound as a loop at specified Vector3 (The first argument passed through the function)
-function SoundByte:LoopAtVector3(position: Vector3?, playback_speed: number?, volume: number?, time_position: number?, pitch: number?)
+function SoundByte.LoopAtVector3(self: SoundByte, position: Vector3, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
-
 	self:CreatePart(position);
 	self.Sound.Looped = true;
 	self.Sound.Parent = self.TargetPart;
@@ -163,7 +180,7 @@ end;
 	pitch -> The pitch the sound will play at.
 ]]
 --Plays a sound inside of the specified instance.
-function SoundByte:PlayAtInstance(instance: Instance?, playback_speed: number?, volume: number?, time_position: number?, pitch: number?)
+function SoundByte.PlayAtInstance(self: SoundByte, instance: Instance, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
 
@@ -175,7 +192,7 @@ function SoundByte:PlayAtInstance(instance: Instance?, playback_speed: number?, 
 	end));
 end;
 --Same as above but destroys itself when played, useful for playing the sound once.
-function SoundByte:PlayOnceAtInstance(instance: Instance?, playback_speed: number?, volume: number?, time_position: number?, pitch: number?)
+function SoundByte.PlayOnceAtInstance(self: SoundByte, instance: Instance, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
 
@@ -184,7 +201,7 @@ function SoundByte:PlayOnceAtInstance(instance: Instance?, playback_speed: numbe
 	self:Destroy();
 end;
 --Alternative to :PlayOnceAtInstance(). Creates a new sound each time and destroys itself after it is finished playing. This is used so the sound will still follow the object it's parented to.
-function SoundByte:PlayStackAtInstance(instance: Instance, playback_speed: number, volume: number, time_position: number, pitch: number) 
+function SoundByte.PlayStackAtInstance(self: SoundByte, instance: Instance, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
 
@@ -196,7 +213,7 @@ function SoundByte:PlayStackAtInstance(instance: Instance, playback_speed: numbe
 	end));
 end;
 --Plays the sound as a loop inside of the specified Instance (The first argument passed through the function)
-function SoundByte:LoopAtInstance(instance: Instance, playback_speed: number, volume: number, time_position: number, pitch: number)
+function SoundByte.LoopAtInstance(self: SoundByte, instance: Instance, playback_speed: number?, volume: number?, time_position: number?, pitch: number?): ()
 	if (self.Sound == nil) then return; end;
 	self:SetModifiers(playback_speed, volume, time_position, pitch);
 
@@ -212,12 +229,12 @@ end;
 --[[
 	Functions for stopping sounds
 ]]
-function SoundByte:Stop()
+function SoundByte.Stop(self: SoundByte): ()
 	if (self.Sound == nil) then return; end;
 	self.Sound:Stop();
 end;
 --Stops all sounds of the same name.
-function SoundByte:StopAll()
+function SoundByte.StopAll(self: SoundByte): ()
 	if (self.Sound == nil) then return; end;
 	for _, soundbyte_object in pairs(active_sounds_table) do
 		if (soundbyte_object == nil) then continue; end;
@@ -225,20 +242,18 @@ function SoundByte:StopAll()
 	end;
 	self.Sound:Stop();
 end;
-function SoundByte:Pause()
+function SoundByte.Pause(self: SoundByte): ()
 	if (self.Sound == nil) then return; end;
 	self.Sound:Pause();
 end;
-function SoundByte:Resume()
+function SoundByte.Resume(self: SoundByte): ()
 	if (self.Sound == nil) then return; end;
 	self.Sound:Resume();
 end;
-
-
 --[[
 	Sets modifiers for sound object, so each function can modify each sound with the arguments passed through.
 ]]
-function SoundByte:SetModifiers(playback_speed : number, volume : number, time_position : number, pitch : number)
+function SoundByte.SetModifiers(self: SoundByte, playback_speed : number, volume : number, time_position : number, pitch : number): ()
 	--self.Sound.Loaded:Wait(); --Waits until sound is loaded before coninuing
 	--PLAYBACK SPEED MODIFIER
 	if (playback_speed ~= nil) then self.Sound.PlaybackSpeed = playback_speed; end;
@@ -256,8 +271,8 @@ end;
 --[[
 	Creates a sound object with the sound info object found upon construction.
 ]]
-function SoundByte:Create() 
-	local sound = self._maid:Add(Instance.new("Sound"));
+function SoundByte.Create(self: SoundByte): Sound
+	local sound: Sound = self._maid:Add(Instance.new("Sound"));
 
 	sound.Name = self.SoundInfo["Name"];
 	sound.SoundId = self.SoundInfo["SoundId"];
@@ -268,11 +283,11 @@ function SoundByte:Create()
 	sound.RollOffMinDistance = self.SoundInfo["RollOffMinDistance"];
 	sound.RollOffMode = self.SoundInfo["RollOffMode"];
 
-	local oldSound = ACTIVE_SOUNDS_FOLDER:FindFirstChild(self.SoundInfo["Name"]);
-	if (oldSound) then
-		oldSound:Destroy();
+	local old_sound = ACTIVE_SOUNDS_FOLDER:FindFirstChild(self.SoundInfo["Name"]);
+	if (old_sound) then
+		old_sound:Destroy();
 	end
-
+	
 	CS:AddTag(sound, COLLECTION_TAG); --Collection service tag, mostly used for the :StopAll() method.
 	sound.Parent = ACTIVE_SOUNDS_FOLDER;
 	return sound;
@@ -281,7 +296,7 @@ end;
 --[[
 	Creates part for sound to be nested in, usually used in the :PlayAtVector3 method. 
 ]]
-function SoundByte:CreatePart(position: Vector3?)
+function SoundByte.CreatePart(self: SoundByte, position: Vector3?): ()
 	self.TargetPart = self._maid:Add(Instance.new("Part"));
 	self.TargetPart.Size = v3_new(1, 1, 1);
 	self.TargetPart.Transparency = 1;
@@ -291,7 +306,7 @@ function SoundByte:CreatePart(position: Vector3?)
 end;
 
 --Destroys SoundByte object.
-function SoundByte:Destroy()
+function SoundByte.Destroy(self: SoundByte): ()
 	active_sounds_table[self] = nil;
     self._maid:DoCleaning();
     setmetatable(self, nil);
