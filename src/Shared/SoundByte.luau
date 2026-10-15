@@ -383,7 +383,7 @@ end;
 ]=]
 local function add_sound(sound_module: Instance): ()
 	if not (sound_module:IsA("ModuleScript")) then return; end;
-	local sound_info: SoundInfo = require(sound_module);
+	local sound_info: SoundInfo = require(sound_module :: any);
 	sound_cache[sound_info.Name] = sound_info;
 end;
 --[=[
@@ -392,7 +392,7 @@ end;
 ]=]
 local function remove_sound(sound_module: Instance): ()
 	if not (sound_module:IsA("ModuleScript")) then return; end;
-	local sound_info: SoundInfo = require(sound_module);
+	local sound_info: SoundInfo = require(sound_module :: any);
 	if not (sound_cache[sound_info.Name]) then return; end;
 	sound_cache[sound_info.Name] = nil;
 end;
