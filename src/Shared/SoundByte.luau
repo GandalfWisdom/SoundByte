@@ -88,11 +88,7 @@ function SoundByte.Create(self: SoundByte): Sound
 	sound.RollOffMaxDistance = self._sound_info["RollOffMaxDistance"];
 	sound.RollOffMinDistance = self._sound_info["RollOffMinDistance"];
 	sound.RollOffMode = self._sound_info["RollOffMode"];
-
 	sound.Parent = SS;
-
-	-- Destroys this class if sound itself is destroyed
-	sound.Destroying:Once(function() self:Destroy(); end);
 
 	return sound;
 end;
